@@ -3,6 +3,17 @@
 #define SCREEN_WIDTH 1280
 #define SCREEN_HEIGHT 720
 
+Vector2 WraparoundScreen(Vector2 position)
+{
+    Vector2 outPosition =
+    {
+        fmodf(position.x + SCREEN_WIDTH, SCREEN_WIDTH),
+        fmodf(position.y + SCREEN_HEIGHT, SCREEN_HEIGHT)
+    };
+
+    return outPosition;
+}
+
 int main(void)
 {
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sunshine");
@@ -14,7 +25,7 @@ int main(void)
     Vector2 velocity{0.0f, 0.0f};
     Vector2 acceleration{0.0f, 0.0};
 
-    Vector2 target{ SCREEN_WIDTH * 0.75f, SCREEN_HEIGHT * 0.75f };
+    Vector2 target = GetMousePosition();
     float speed = 500.0f;
 
     bool useGUI = false;
@@ -22,6 +33,7 @@ int main(void)
     {
         const float dt = GetFrameTime();
 
+        target = GetMousePosition();
         acceleration = Normalize(target - position) * speed - velocity;
         velocity = velocity + acceleration * dt;
         position = position + velocity * dt + acceleration * dt * dt * 0.5f;
@@ -34,7 +46,6 @@ int main(void)
         BeginDrawing();
         ClearBackground(RAYWHITE);
         DrawCircleV(position, radius, RED);
-        DrawCircleV(target, radius, BLUE);
 
         if (IsKeyPressed(KEY_GRAVE)) useGUI = !useGUI;
         if (useGUI)
@@ -44,7 +55,6 @@ int main(void)
             ImGui::SliderFloat2("Velocity", &velocity.x, -100.0f, 100.0f);
             ImGui::SliderFloat2("Acceleration", &acceleration.x, -10.0f, 10.0f);
             ImGui::Separator();
-            ImGui::SliderFloat2("Target Position", &target.x, 0.0f, SCREEN_WIDTH);
             ImGui::SliderFloat("Seeker Speed", &speed, -100.0f, 100.0f);
             rlImGuiEnd();
         }
