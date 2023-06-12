@@ -10,6 +10,8 @@
 
 using namespace std;
 
+
+
 int main(void)
 {
     const int screenWidth = 1280;
@@ -17,35 +19,15 @@ int main(void)
     InitWindow(screenWidth, screenHeight, "Sunshine");
     rlImGuiSetup(true);
 
-    vector<Rectangle> obstacles;
-    std::ifstream inFile("../game/assets/data/obstacles.txt");
-    while (!inFile.eof())
-    {
-        Rectangle obstacle;
-        inFile >> obstacle.x >> obstacle.y >> obstacle.width >> obstacle.height;
-        obstacles.push_back(obstacle);
-    }
-    inFile.close();
+    const float radius = 20.0f;
+    Vector2 position{ SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f };
+    Vector2 velocity{0.0f, 0.0f};
+    Vector2 acceleration{0.0f, 0.0};
 
-    float playerRotation = 0.0f;
-    const float playerWidth = 60.0f;
-    const float playerHeight = 40.0f;
-    const float playerRange = 1000.0f;
-    const float playerRotationSpeed = 100.0f;
+    Vector2 target = GetMousePosition();
+    float speed = 500.0f;
 
-    const char* recText = "Nearest to Rectangle";
-    const char* circleText = "Nearest to Circle";
-    const char* poiText = "Nearest Intersection";
-    const int fontSize = 10;
-    const int recTextWidth = MeasureText(recText, fontSize);
-    const int circleTextWidth = MeasureText(circleText, fontSize);
-    const int poiTextWidth = MeasureText(poiText, fontSize);
-
-    const Rectangle rectangle{ 1000.0f, 500.0f, 160.0f, 90.0f };
-    const Circle circle{ { 1000.0f, 250.0f }, 50.0f };
-
-    bool demoGUI = false;
-    SetTargetFPS(60);
+    bool useGUI = false;
     while (!WindowShouldClose())
     {
         float dt = GetFrameTime();
@@ -59,10 +41,10 @@ int main(void)
         const Vector2 playerEnd = playerPosition + playerDirection * playerRange;
         const Rectangle playerRec{ playerPosition.x, playerPosition.y, playerWidth, playerHeight };
 
-        const Vector2 nearestRecPoint = NearestPoint(playerPosition, playerEnd,
-            { rectangle.x + rectangle.width * 0.5f, rectangle.y + rectangle.height * 0.5f });
-        const Vector2 nearestCirclePoint = NearestPoint(playerPosition, playerEnd, circle.position);
-        Vector2 poi;
+        target = GetMousePosition();
+        acceleration = Normalize(target - position) * speed - velocity;
+        velocity = velocity + acceleration * dt;
+        position = position + velocity * dt + acceleration * dt * dt * 0.5f;
 
         const bool collision = NearestIntersection(playerPosition, playerEnd, obstacles, poi);
         const bool rectangleVisible = IsRectangleVisible(playerPosition, playerEnd, rectangle, obstacles);
