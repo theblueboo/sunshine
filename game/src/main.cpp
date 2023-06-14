@@ -1,89 +1,168 @@
 #include "rlImGui.h"
 #include "Physics.h"
 #include "Collision.h"
+#include "Math.h"
+#include "raylib.h"
+#define SCREEN_WIDTH 1280
+#define SCREEN_HEIGHT 720
 
-#include <array>
-#include <vector>
-#include <string>
-#include <iostream>
-#include <fstream>
+
 
 using namespace std;
 
+Vector2 WraparoundScreen(Vector2 position)
+{
+    Vector2 outPosition =
+    {
+        fmodf(position.x + SCREEN_WIDTH, SCREEN_WIDTH),
+        fmodf(position.y + SCREEN_HEIGHT, SCREEN_HEIGHT)
+    };
+
+    return outPosition;
+}
+
+//Vector2 LimitMagnitude(const Vector2& toLimit, float maxLength)
+//{
+  //  float lengthSq = LengthSqr(toLimit);
+//    if (lengthSq > maxLength * maxLength)
+//}
 
 
+//void Restart()
+//{
+
+//}
+
+
+//std::vector<Agent*> 
 int main(void)
 {
-    const int screenWidth = 1280;
-    const int screenHeight = 720;
-    InitWindow(screenWidth, screenHeight, "Sunshine");
+
+
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Sunshine");
     rlImGuiSetup(true);
+    SetTargetFPS(240);
+
+
+
+
+    enum GameState
+    {
+        NONE,
+        SEEK,
+        FLEE,
+        ARRIVAL,
+        AVOID
+    };
 
     const float radius = 20.0f;
-    Vector2 position{ SCREEN_WIDTH * 0.5f, SCREEN_HEIGHT * 0.5f };
+    Vector2 position{ (rand() % SCREEN_WIDTH) + 1, (rand() % SCREEN_HEIGHT) + 1 };
     Vector2 velocity{0.0f, 0.0f};
     Vector2 acceleration{0.0f, 0.0};
+    Vector2 target;
+    float speed = 100.0f;
+    float Maxspeed = 200.0f;
 
-    Vector2 target = GetMousePosition();
-    float speed = 500.0f;
+
+    enum GameState currentState;
+    currentState = NONE;
 
     bool useGUI = false;
+    SetTargetFPS(60);
     while (!WindowShouldClose())
     {
+
         float dt = GetFrameTime();
-        if (IsKeyDown(KEY_E))
-            playerRotation += playerRotationSpeed * dt;
-        if (IsKeyDown(KEY_Q))
-            playerRotation -= playerRotationSpeed * dt;
 
-        const Vector2 playerPosition = GetMousePosition();
-        const Vector2 playerDirection = Direction(playerRotation * DEG2RAD);
-        const Vector2 playerEnd = playerPosition + playerDirection * playerRange;
-        const Rectangle playerRec{ playerPosition.x, playerPosition.y, playerWidth, playerHeight };
-
-        target = GetMousePosition();
-        acceleration = Normalize(target - position) * speed - velocity;
         velocity = velocity + acceleration * dt;
         position = position + velocity * dt + acceleration * dt * dt * 0.5f;
+        //speed = ((target*) - (position*)(velocity));
+        //if (Maxspeed < speed)
+        //{
+          //  velocity = velocity * (Maxspeed / speed);
+        //}
+    
 
-        const bool collision = NearestIntersection(playerPosition, playerEnd, obstacles, poi);
-        const bool rectangleVisible = IsRectangleVisible(playerPosition, playerEnd, rectangle, obstacles);
-        const bool circleVisible = IsCircleVisible(playerPosition, playerEnd, circle, obstacles);
+
+    
+            
+
+        if (IsKeyPressed(KEY_ZERO)) currentState = NONE;
+        if (IsKeyPressed(KEY_ONE)) currentState = SEEK;
+        if (IsKeyPressed(KEY_TWO)) currentState = FLEE;
+        if (IsKeyPressed(KEY_THREE)) currentState = ARRIVAL;
+        if (IsKeyPressed(KEY_FOUR)) currentState = AVOID;
+        //if (IsKeyPressed(KEY_SPACE)) return ;
+
+            if (currentState==SEEK)
+            {
+                DrawText(TextFormat("Current Mode: SEEK"), 500, 30, 20, BLACK);
+                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+                    {
+                        target = GetMousePosition();
+
+                        acceleration = Normalize(target - position) * speed - velocity;
+
+                        
+                    }
+            }
+            else if (currentState == FLEE)
+            {
+                DrawText(TextFormat("Current Mode: FLEE"), 500, 30, 20, BLACK);
+                if (IsMouseButtonDown(MOUSE_BUTTON_LEFT))
+                {
+                    target = GetMousePosition();
+
+                    acceleration = (Normalize(target - position)) * -1 * speed - velocity;
+                }
+            }
+            if (currentState == ARRIVAL)
+            {
+                DrawText(TextFormat("Current Mode: ARRIVAL"), 500, 30, 20, BLACK);
+            }
+            if (currentState == AVOID)
+            {
+                DrawText(TextFormat("Current Mode: AVOID"), 500, 30, 20, BLACK);
+            }
+            else if (currentState == NONE)
+            {
+               DrawText(TextFormat("Current Mode: NONE"), 500, 30, 20, BLACK);
+            }
+            
+        
+        
+
+        if (position.x < 0.0f) position.x = SCREEN_WIDTH;
+        if (position.x > SCREEN_WIDTH) position.x = 0.0f;
+        if (position.y > SCREEN_HEIGHT) position.y = 0.0f;
+        if (position.y < 0.0f) position.y = SCREEN_HEIGHT;
+
 
         BeginDrawing();
         ClearBackground(RAYWHITE);
+        DrawCircleV (position, radius, RED);
+        
 
-        // Render player
-        DrawRectanglePro(playerRec, { playerWidth * 0.5f, playerHeight * 0.5f }, playerRotation, PURPLE);
-        DrawLine(playerPosition.x, playerPosition.y, playerEnd.x, playerEnd.y, BLUE);
-        DrawCircleV(playerPosition, 10.0f, BLUE);
-
-        // Render geometry
-        for (const Rectangle& obstacle : obstacles)
-            DrawRectangleRec(obstacle, GREEN);
-        DrawRectangleRec(rectangle, rectangleVisible ? GREEN : RED);
-        DrawCircleV(circle.position, circle.radius, circleVisible ? GREEN : RED);
-
-        // Render labels
-        DrawText(circleText, nearestCirclePoint.x - circleTextWidth * 0.5f, nearestCirclePoint.y - fontSize * 2, fontSize, BLUE);
-        DrawCircleV(nearestRecPoint, 10.0f, BLUE);
-        DrawText(recText, nearestRecPoint.x - recTextWidth * 0.5f, nearestRecPoint.y - fontSize * 2, fontSize, BLUE);
-        DrawCircleV(nearestCirclePoint, 10.0f, BLUE);
-        if (collision)
-        {
-            DrawText(poiText, poi.x - poiTextWidth * 0.5f, poi.y - fontSize * 2, fontSize, BLUE);
-            DrawCircleV(poi, 10.0f, BLUE);
-        }
+        
 
         // Render GUI
-        if (IsKeyPressed(KEY_GRAVE)) demoGUI = !demoGUI;
-        if (demoGUI)
+        if (IsKeyPressed(KEY_GRAVE)) useGUI = !useGUI;
+        if (useGUI)
         {
             rlImGuiBegin();
-            ImGui::ShowDemoWindow(nullptr);
+            ImGui::SliderFloat2("Position", &position.x, 0.0f, SCREEN_WIDTH);
+            ImGui::SliderFloat2("Velocity", &velocity.x, -100.0f, 100.0f);
+            ImGui::SliderFloat2("Acceleration", &acceleration.x, -10.0f, 10.0f);
+            ImGui::Separator();
+            ImGui::SliderFloat("Seeker Speed", &speed, -100.0f, 100.0f);
             rlImGuiEnd();
         }
 
+        DrawFPS(10, 10);
+        DrawText("Press ~ to open/close GUI", 10, 30, 20, GRAY);
+        DrawText(TextFormat("Position: (%f, %f)", position.x, position.y), 10, 50, 20, RED);
+        DrawText(TextFormat("Velocity: (%f, %f)", velocity.x, velocity.y), 10, 70, 20, RED);
+        DrawText(TextFormat("Acceleration: (%f, %f)", acceleration.x, acceleration.y), 10, 90, 20, RED);
         EndDrawing();
     }
 
